@@ -1,0 +1,157 @@
+{
+  "info": {
+    "name": "Merchania API",
+    "description": "Коллекция запросов к бэкенду Merchania. Base URL: http://localhost:4000. Пока нет авторизации — роль задаётся заголовком X-User-Id (1 = покупатель, 2 = художник).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base", "value": "http://localhost:4000" },
+    { "key": "buyer", "value": "1" },
+    { "key": "artist", "value": "2" }
+  ],
+  "item": [
+    {
+      "name": "Публичные",
+      "item": [
+        { "name": "Health", "request": { "method": "GET", "url": "{{base}}/api/health" } },
+        {
+          "name": "Каталог (страница 1)",
+          "request": { "method": "GET", "url": "{{base}}/api/products?limit=9&page=1&sort=newest" }
+        },
+        {
+          "name": "Каталог с фильтрами",
+          "request": { "method": "GET", "url": "{{base}}/api/products?fandomId=1&categoryId=3&priceMin=100&priceMax=800&search=стенд" }
+        },
+        { "name": "Фандомы (сайдбар)", "request": { "method": "GET", "url": "{{base}}/api/products/meta/fandoms" } },
+        { "name": "Категории (сайдбар)", "request": { "method": "GET", "url": "{{base}}/api/products/meta/categories" } },
+        { "name": "Карточка товара", "request": { "method": "GET", "url": "{{base}}/api/products/1" } }
+      ]
+    },
+    {
+      "name": "Корзина (покупатель)",
+      "item": [
+        {
+          "name": "Корзина",
+          "request": { "method": "GET", "url": "{{base}}/api/cart", "header": [{ "key": "X-User-Id", "value": "{{buyer}}" }] }
+        },
+        {
+          "name": "Добавить товар",
+          "request": {
+            "method": "POST",
+            "url": "{{base}}/api/cart",
+            "header": [
+              { "key": "X-User-Id", "value": "{{buyer}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{ \"productId\": 3, \"quantity\": 1 }" }
+          }
+        },
+        {
+          "name": "Изменить количество",
+          "request": {
+            "method": "PATCH",
+            "url": "{{base}}/api/cart/3",
+            "header": [
+              { "key": "X-User-Id", "value": "{{buyer}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{ \"quantity\": 2 }" }
+          }
+        },
+        {
+          "name": "Удалить позицию",
+          "request": { "method": "DELETE", "url": "{{base}}/api/cart/3", "header": [{ "key": "X-User-Id", "value": "{{buyer}}" }] }
+        }
+      ]
+    },
+    {
+      "name": "Заказы (покупатель)",
+      "item": [
+        {
+          "name": "Оформить заказ (checkout)",
+          "request": {
+            "method": "POST",
+            "url": "{{base}}/api/orders/checkout",
+            "header": [
+              { "key": "X-User-Id", "value": "{{buyer}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{ \"shippingAddress\": \"Москва, ул. Творческая, 42\", \"paymentMethod\": \"card\" }" }
+          }
+        },
+        { "name": "История заказов", "request": { "method": "GET", "url": "{{base}}/api/orders", "header": [{ "key": "X-User-Id", "value": "{{buyer}}" }] } },
+        { "name": "Заказ по id", "request": { "method": "GET", "url": "{{base}}/api/orders/1", "header": [{ "key": "X-User-Id", "value": "{{buyer}}" }] } }
+      ]
+    },
+    {
+      "name": "Кабинет",
+      "item": [
+        { "name": "Профиль (me)", "request": { "method": "GET", "url": "{{base}}/api/account/me", "header": [{ "key": "X-User-Id", "value": "{{buyer}}" }] } },
+        {
+          "name": "Обновить профиль",
+          "request": {
+            "method": "PATCH",
+            "url": "{{base}}/api/account/profile",
+            "header": [
+              { "key": "X-User-Id", "value": "{{buyer}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{ \"firstName\": \"Иван\", \"lastName\": \"Иванов\", \"phone\": \"+7 999 000-00-00\" }" }
+          }
+        },
+        { "name": "Избранное", "request": { "method": "GET", "url": "{{base}}/api/account/wishlist", "header": [{ "key": "X-User-Id", "value": "{{buyer}}" }] } },
+        { "name": "Сердечко (toggle)", "request": { "method": "POST", "url": "{{base}}/api/account/wishlist/2", "header": [{ "key": "X-User-Id", "value": "{{buyer}}" }] } }
+      ]
+    },
+    {
+      "name": "Панель художника",
+      "item": [
+        { "name": "Аналитика", "request": { "method": "GET", "url": "{{base}}/api/artist/analytics", "header": [{ "key": "X-User-Id", "value": "{{artist}}" }] } },
+        { "name": "Мои товары", "request": { "method": "GET", "url": "{{base}}/api/artist/products", "header": [{ "key": "X-User-Id", "value": "{{artist}}" }] } },
+        {
+          "name": "Добавить товар",
+          "request": {
+            "method": "POST",
+            "url": "{{base}}/api/artist/products",
+            "header": [
+              { "key": "X-User-Id", "value": "{{artist}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{ \"categoryId\": 1, \"fandomId\": 3, \"title\": \"Значок \\\"Денджи\\\"\", \"description\": \"Металл, эмаль\", \"price\": 320, \"stock\": 10 }" }
+          }
+        },
+        { "name": "Заказы художника", "request": { "method": "GET", "url": "{{base}}/api/artist/orders", "header": [{ "key": "X-User-Id", "value": "{{artist}}" }] } },
+        {
+          "name": "Сменить статус заказа",
+          "request": {
+            "method": "PATCH",
+            "url": "{{base}}/api/artist/orders/1/status",
+            "header": [
+              { "key": "X-User-Id", "value": "{{artist}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{ \"status\": \"Сборка\", \"trackingNumber\": \"BB-000-111\" }" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Поддержка",
+      "item": [
+        {
+          "name": "Создать заявку",
+          "request": {
+            "method": "POST",
+            "url": "{{base}}/api/support/tickets",
+            "header": [
+              { "key": "X-User-Id", "value": "{{buyer}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{ \"subject\": \"Где мой заказ?\", \"message\": \"Трекинг не обновляется.\" }" }
+          }
+        },
+        { "name": "Мои заявки", "request": { "method": "GET", "url": "{{base}}/api/support/tickets", "header": [{ "key": "X-User-Id", "value": "{{buyer}}" }] } }
+      ]
+    }
+  ]
+}

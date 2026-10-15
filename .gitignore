@@ -1,0 +1,22 @@
+# зависимости
+node_modules/
+
+# секреты и локальные настройки — в репозиторий НЕ коммитим
+.env
+.env.local
+.env.*.local
+
+# сборка фронта
+frontend/dist/
+
+# логи
+*.log
+npm-debug.log*
+
+# ОС / IDE
+.DS_Store
+.idea/
+.vscode/
+
+# загруженные вложения, не часть проекта
+uploads/

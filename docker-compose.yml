@@ -1,0 +1,52 @@
+# Поднимает всё приложение одной командой:  docker compose up --build
+#
+#   db       — SQL Server 2022 (свой образ из папки db/): миграции применяются
+#              автоматически при первом старте тома
+#   backend  — Express API (порт 4000)
+#   frontend — собранный React + nginx (порт 8080), /api/* проксирует в backend
+#
+# Остановить: docker compose down (данные БД остаются в томе mssql-data)
+# Сбросить БД начисто: docker compose down -v
+
+services:
+  db:
+    build:
+      context: .
+      dockerfile: db/Dockerfile
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "DevPassw0rd!"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql-data:/var/opt/mssql
+
+  backend:
+    build: ./backend
+    environment:
+      PORT: "4000"
+      MOCK_DB: "false"
+      DB_SERVER: db
+      DB_PORT: "1433"
+      DB_USER: sa
+      DB_PASSWORD: "DevPassw0rd!"
+      DB_DATABASE: ArtistMerchDB
+      DB_TRUST_SERVER_CERTIFICATE: "true"
+      CORS_ORIGIN: "*"
+      DEMO_USER_ID: "1"
+    ports:
+      - "4000:4000"
+    depends_on:
+      - db
+    restart: on-failure
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  mssql-data:

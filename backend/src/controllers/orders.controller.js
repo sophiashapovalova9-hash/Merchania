@@ -1,0 +1,67 @@
+import { checkout, getOrder, listOrderItems, listByBuyer, updateStatus, listStatuses } from './orders.repo.js';
+import { getArtistOrder, listArtistOrders } from './artists.repo.js';
+import { ok, list } from '../utils/http.js';
+import { requireEnum, requireInt, requireString, optionalString } from '../utils/validate.js';
+
+const PAYMENT_METHODS = ['card', 'sbp'];
+
+/** POST /api/orders/checkout { shippingAddress, paymentMethod? } — кнопка "Оплатить" */
+export async function createOrder(req, res) {
+  const shippingAddress = requireString(req.body?.shippingAddress, 'shippingAddress', { max: 500 });
+  const paymentMethod = requireEnum(req.body?.paymentMethod ?? 'card', 'paymentMethod', PAYMENT_METHODS);
+
+  const result = await checkout({ buyerId: req.user.user_id, shippingAddress, paymentMethod });
+  if (result.error) return res.status(result.error.status).json({ success: false, error: result.error.message });
+
+  const order = await getOrder(result.orderId);
+  const items = await listOrderItems(result.orderId);
+  return ok(res, { order, items, payment_method: paymentMethod }, 201);
+}
+
+/** GET /api/orders — история заказов (Account -> Заказы) */
+export async function myOrders(req, res) {
+  return list(res, await listByBuyer(req.user.user_id));
+}
+
+/** GET /api/orders/:id */
+export async function orderDetails(req, res) {
+  const orderId = requireInt(req.params.id, 'id');
+  const order = await getOrder(orderId);
+
+  if (!order) return res.status(404).json({ success: false, error: 'Заказ не найден' });
+  // покупатель видит только свои заказы; художник — заказы со своими товарами
+  if (order.buyer_id !== req.user.user_id && req.user.role_name !== 'artist' && req.user.role_name !== 'admin') {
+    return res.status(403).json({ success: false, error: 'Нет доступа к этому заказу' });
+  }
+
+  const items = await listOrderItems(orderId);
+  return ok(res, { order, items });
+}
+
+/** GET /api/orders/meta/statuses — справочник статусов для дашборда */
+export async function statuses(_req, res) {
+  return list(res, await listStatuses());
+}
+
+/** GET /api/artist/orders — заказы в панели художника */
+export async function artistOrders(req, res) {
+  return list(res, await listArtistOrders(req.user.artist_id));
+}
+
+/** PATCH /api/artist/orders/:id/status { status, trackingNumber? } */
+export async function setOrderStatus(req, res) {
+  const orderId = requireInt(req.params.id, 'id');
+  const status = requireString(req.body?.status, 'status', { max: 50 });
+  const trackingNumber = optionalString(req.body?.trackingNumber, 'trackingNumber', { max: 100 });
+
+  const owned = await getArtistOrder(orderId, req.user.artist_id);
+  if (!owned) return res.status(404).json({ success: false, error: 'Заказ не найден или не относится к вашему магазину' });
+
+  const allowed = await listStatuses();
+  if (!allowed.some((st) => st.status_name === status)) {
+    return res.status(400).json({ success: false, error: `Неизвестный статус. Доступно: ${allowed.map((st) => st.status_name).join(', ')}` });
+  }
+
+  const order = await updateStatus(orderId, status, trackingNumber);
+  return ok(res, order);
+}
